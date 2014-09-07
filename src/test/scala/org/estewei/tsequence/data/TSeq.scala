@@ -53,6 +53,9 @@ abstract class TSeq[S[_[_, _], _, _]] {
       })
   }
 
+  def tunsnoc[C[_, _], X, Y](s: S[C, X, Y]): TViewR[S, C, X, Y] =
+    tviewr(s)
+
   def tcons[C[_, _], X, Y, Z](h: C[X, Y], t: => S[C, Y, Z]): S[C, X, Z] =
     tconcat(tsingleton(h), t)
 

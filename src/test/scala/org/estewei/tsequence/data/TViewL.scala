@@ -5,7 +5,7 @@ import Leibniz._
 
 sealed abstract class TViewL[S[_[_, _], _, _], C[_, _], X, Y] {
 
-  type UC[A] = { type λ[α] = (C[X, α], S[C, α, Y]) => A }
+  type UC[A] = { type λ[α] = (C[X, α], => S[C, α, Y]) => A }
 
   def fold[A](e: (Y === X) => A, uc: Forall[UC[A]#λ]): A
 
