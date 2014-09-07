@@ -38,4 +38,4 @@ libraryDependencies ++= Seq(
 )
 
 // Wartremover
-wartremoverErrors ++= Warts.all
+//wartremoverErrors ++= Warts.all
