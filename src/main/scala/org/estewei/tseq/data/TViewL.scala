@@ -1,4 +1,4 @@
-package org.estewei.tsequence.data
+package org.estewei.tseq.data
 
 import scalaz.{Need, Leibniz, Forall}
 import Leibniz._

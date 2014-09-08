@@ -1,11 +1,11 @@
-package org.estewei.tsequence.fixed
+package org.estewei.tseq.fixed
 
 import scala.{AnyVal, Function0, Predef => P}
 import scala.annotation.tailrec
 import scalaz.{Free => _, _}
 import scalaz.std.function._
 
-import org.estewei.tsequence.data._
+import org.estewei.tseq.data._
 
 sealed abstract class Free[S[_], A] { self =>
   import Free._

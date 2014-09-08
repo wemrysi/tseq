@@ -1,4 +1,4 @@
-name := "tsequence"
+name := "tseq"
 
 organization := "org.estewei"
 

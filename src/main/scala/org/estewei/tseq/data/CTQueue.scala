@@ -1,4 +1,4 @@
-package org.estewei.tsequence.data
+package org.estewei.tseq.data
 
 import scala.sys
 import scalaz.{Leibniz, Forall, ⊥, ⊤}

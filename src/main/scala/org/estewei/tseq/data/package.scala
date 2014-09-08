@@ -1,4 +1,4 @@
-package org.estewei.tsequence
+package org.estewei.tseq
 
 package object data {
 
