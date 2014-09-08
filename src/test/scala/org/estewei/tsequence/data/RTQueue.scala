@@ -1,19 +1,20 @@
 package org.estewei.tsequence.data
 
+import scala.sys
 import scalaz.{Forall, Leibniz, ⊥, ⊤}
 
 /** Queue with O(1) worst-case operations */
-sealed abstract class RTQueue[C[_, _], A, B]
+sealed abstract class RTQueue[C[_, _], A, B] {
+  type Y
+  type X
+  private[data] val f: TConsList[C, A, Y]
+  private[data] val r: TSnocList[C, Y, B]
+  private[data] val a: TConsList[C, X, Y]
+}
 
 object RTQueue {
   import TConsList._
   import TSnocList._
-
-  private final case class RQ[C[_, _], X, Y, Z, A](
-    f: TConsList[C, X, Y],
-    r: TSnocList[C, Y, Z],
-    a: TConsList[C, A, Y]
-  ) extends RTQueue[C, X, Z]
 
   def empty[C[_, _], A]: RTQueue[C, A, A] =
     RQ(cNil[C, A], sNil[C, A], cNil[C, A])
@@ -30,6 +31,52 @@ object RTQueue {
           RQ(f, r, t)
       })
 
+  implicit val rtQueueTSeq: TSeq[RTQueue] =
+    new TSeq[RTQueue] {
+
+      def tempty[C[_, _], X]: RTQueue[C, X, X] =
+        empty[C, X]
+
+      def tsingleton[C[_, _], X, Y](x: C[X, Y]): RTQueue[C, X, Y] = {
+        val c = tConsListTSeq.tsingleton(x)
+        RQ(c, sNil[C, Y], c)
+      }
+
+      override def tsnoc[C[_, _], X, Y, Z](p: RTQueue[C, X, Y], l: C[Y, Z]): RTQueue[C, X, Z] =
+        RTQueue(p.f, p.r.tsnoc(l), p.a)
+
+      override def tviewl[C[_, _], A, B](q: RTQueue[C, A, B]): TViewL[RTQueue, C, A, B] =
+        q.f fold (
+          e1 => q.r fold (
+            e2 =>
+              e2.subst[({type λ[α] = TViewL[RTQueue, C, A, α]})#λ](
+                e1.subst[({type λ[α] = TViewL[RTQueue, C, α, q.Y]})#λ](TViewL.tEmptyL[RTQueue, C, q.Y])),
+            new Forall[q.r.US[TViewL[RTQueue, C, A, B]]#λ] {
+              def apply[U] = (_, _) =>
+                sys.error("unpossible!")
+            }),
+          new Forall[q.f.UC[TViewL[RTQueue, C, A, B]]#λ] {
+            def apply[V] = (h, t) =>
+              TViewL.tUncons(h, RTQueue(t, q.r, q.a))
+          })
+
+    }
+
+  ////
+
+  private def RQ[C[_, _], A, B, E, D](
+    _f: TConsList[C, A, E],
+    _r: TSnocList[C, E, B],
+    _a: TConsList[C, D, E]
+  ): RTQueue[C, A, B] =
+    new RTQueue[C, A, B] {
+      type Y = E
+      type X = D
+      val f = _f
+      val r = _r
+      val a = _a
+    }
+
   private def revAppend[C[_, _], X, Y, Z](l: TConsList[C, X, Y], r: TSnocList[C, Y, Z]): TConsList[C, X, Z] =
     rotate(l, r, cNil[C, Z])
 
@@ -38,7 +85,7 @@ object RTQueue {
     a: TSnocList[C, X, Y],
     r: TConsList[C, Y, Z]
    ): TConsList[C, W, Z] = {
-    def err = scala.sys.error("Invariant |a| = |f| - (|r| - 1) broken!")
+    def err = sys.error("Invariant |a| = |f| - (|r| - 1) broken!")
 
     f fold (
       e1 => {

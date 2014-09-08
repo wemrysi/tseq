@@ -4,10 +4,14 @@ import scalaz.{Need, Leibniz, Forall}
 import Leibniz._
 
 sealed abstract class TConsList[C[_, _], X, Y] {
+  import TConsList._
 
   type UC[A] = { type λ[α] = (C[X, α], => TConsList[C, α, Y]) => A }
 
   def fold[A](n: (Y === X) => A, uc: Forall[UC[A]#λ]): A
+
+  def tcons[W](x: C[W, X]): TConsList[C, W, Y] =
+    tCons(x, this)
 
 }
 

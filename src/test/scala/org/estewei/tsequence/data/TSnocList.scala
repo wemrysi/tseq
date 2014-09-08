@@ -4,10 +4,14 @@ import scalaz.{Leibniz, Forall}
 import Leibniz._
 
 sealed abstract class TSnocList[C[_, _], X, Y] {
+  import TSnocList._
 
   type US[A] = { type λ[α] = (TSnocList[C, X, α], C[α, Y]) => A }
 
   def fold[A](n: (X === Y) => A, us: Forall[US[A]#λ]): A
+
+  def tsnoc[Z](l: C[Y, Z]): TSnocList[C, X, Z] =
+    tSnoc(this, l)
 
 }
 
