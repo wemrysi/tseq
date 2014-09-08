@@ -7,6 +7,7 @@ sealed abstract class TViewR[S[_[_, _], _, _], C[_, _], X, Y] {
 
   type US[A] = { type λ[α] = (S[C, X, α], C[α, Y]) => A }
 
+  /** HT: @pchiusano for the insight on how to define fold! */
   def fold[A](e: (X === Y) => A, us: Forall[US[A]#λ]): A
 
 }
