@@ -25,7 +25,7 @@ object TViewL {
   def tEmptyL[S[_[_, _], _, _], C[_, _], X]: TViewL[S, C, X, X] =
     TEmptyL()
 
-  def tUncons[S[_[_, _], _, _], C[_, _], X, Y, Z ](h: C[X, Y], t: => S[C, Y, Z]): TViewL[S, C, X, Z] =
+  def tUncons[S[_[_, _], _, _], C[_, _], X, Y, Z](h: C[X, Y], t: => S[C, Y, Z]): TViewL[S, C, X, Z] =
     TUncons(h, Need(t))
 
 }

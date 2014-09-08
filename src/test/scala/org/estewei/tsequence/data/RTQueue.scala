@@ -15,6 +15,7 @@ sealed abstract class RTQueue[C[_, _], A, B] {
 object RTQueue {
   import TConsList._
   import TSnocList._
+  import Leibniz._
 
   def empty[C[_, _], A]: RTQueue[C, A, A] =
     RQ(cNil[C, A], sNil[C, A], cNil[C, A])
@@ -94,7 +95,7 @@ object RTQueue {
           new Forall[a.US[TConsList[C, W, Z]]#λ] {
             def apply[A] = (p, l) =>
               p fold (
-                e2 => e1.compose(Leibniz.symm[⊥, ⊤, X, A](e2)).subst[({type λ[α] = TConsList[C, α, Z]})#λ](tCons(l, r)),
+                e2 => e1.compose(symm[⊥, ⊤, X, A](e2)).subst[({type λ[α] = TConsList[C, α, Z]})#λ](tCons(l, r)),
                 new Forall[p.US[TConsList[C, W, Z]]#λ] {
                   def apply[B] = (_, _) =>
                     err
