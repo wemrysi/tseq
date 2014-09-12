@@ -34,8 +34,14 @@ scalacOptions ++= Seq(
 
 // Compile Dependencies
 libraryDependencies ++= Seq(
-  "org.scalaz" %% "scalaz-core" % "7.1.0"
+  "org.scalaz" %% "scalaz-core" % "7.1.0",
+  "org.scalaz" %% "scalaz-iteratee" % "7.1.0",
+  "com.storm-enroute" %% "scalameter" % "0.6"
 )
+
+testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
+
+parallelExecution in Test := false
 
 // Wartremover
 //wartremoverErrors ++= Warts.all
