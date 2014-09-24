@@ -15,18 +15,18 @@ resolvers ++= Seq(
 // Compile options
 // http://tpolecat.github.io/2014/04/11/scalac-flags.html
 scalacOptions ++= Seq(
-  "-deprecation",           
+  "-deprecation",
   "-encoding", "UTF-8",
-  "-feature",                
+  "-feature",
   "-language:existentials",
   "-language:higherKinds",
   "-language:implicitConversions",
   "-unchecked",
-  "-Xfatal-warnings",       
+  "-Xfatal-warnings",
   "-Xlint",
-  "-Yno-adapted-args",       
+  "-Yno-adapted-args",
   "-Ywarn-dead-code",
-  "-Ywarn-numeric-widen",   
+  "-Ywarn-numeric-widen",
   "-Ywarn-value-discard",
   "-Xfuture",
   "-Yno-imports"
@@ -42,6 +42,3 @@ libraryDependencies ++= Seq(
 testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
 
 parallelExecution in Test := false
-
-// Wartremover
-//wartremoverErrors ++= Warts.all
