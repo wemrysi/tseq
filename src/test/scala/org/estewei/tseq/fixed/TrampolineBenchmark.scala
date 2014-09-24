@@ -1,12 +1,14 @@
 package org.estewei.tseq.fixed
 
-import scala.Int
-import scala.Stream
+import scala.{Int, Stream, Function0}
 import org.scalameter.api._
-import scalaz.{Free => FreeZ, Trampoline => TrampolineZ, _}
+import scalaz.{Free => FreeZ, Trampoline => _, _}
 import scalaz.iteratee._
 
 object TrampolineBenchmark extends PerformanceTest {
+  import freeMonadFree._
+  import scalaz.std.function._
+  import scalaz.syntax.bind._
 
   lazy val executor = SeparateJvmsExecutor(
     new Executor.Warmer.Default,
@@ -15,27 +17,14 @@ object TrampolineBenchmark extends PerformanceTest {
   lazy val reporter = new LoggingReporter
   lazy val persistor = Persistor.None
 
-  def ackermannTA(m: Int, n: Int): Trampoline[Int] = {
-    import Trampoline._
+  def ackermann[M[_[_], _]](m: Int, n: Int)(implicit M: MonadFree[M, Function0]): M[Function0, Int] = {
     if (m <= 0)
-      delay(n + 1)
+      M.point(n + 1)
     else if (n <= 0)
-      suspend(ackermannTA(m - 1, 1))
+      M.suspend(ackermann[M](m - 1, 1))
     else for {
-      a <- suspend(ackermannTA(m, n - 1))
-      b <- suspend(ackermannTA(m - 1, a))
-    } yield b
-  }
-
-  def ackermannZ(m: Int, n: Int): FreeZ.Trampoline[Int] = {
-    import TrampolineZ._
-    if (m <= 0)
-      delay(n + 1)
-    else if (n <= 0)
-      suspend(ackermannZ(m - 1, 1))
-    else for {
-      a <- suspend(ackermannZ(m, n - 1))
-      b <- suspend(ackermannZ(m - 1, a))
+      a <- M.suspend(ackermann[M](m, n - 1))
+      b <- M.suspend(ackermann[M](m - 1, a))
     } yield b
   }
 
@@ -43,23 +32,12 @@ object TrampolineBenchmark extends PerformanceTest {
   val ns = Gen.range("n")(1, 7, 1)
 
 /*
-[info] ::Benchmark TSeq Trampoline::
-[info] cores: 2
-[info] hostname: vera.local
-[info] jvm-name: Java HotSpot(TM) 64-Bit Server VM
-[info] jvm-vendor: Oracle Corporation
-[info] jvm-version: 24.51-b03
-[info] os-arch: x86_64
-[info] os-name: Mac OS X
-[info] Parameters(n -> 1): 0.078
-[info] Parameters(n -> 2): 0.42
-[info] Parameters(n -> 3): 2.17
-[info] Parameters(n -> 4): 10.215
-[info] Parameters(n -> 5): 42.867
-[info] Parameters(n -> 6): 177.439
-[info] Parameters(n -> 7): 739.643
 
-[info] ::Benchmark Scalaz Trampoline::
+All benchmarks done on my ca. 2009 2.5GHz Core2Duo MacBook Pro
+
+ackermann function with m = 3 and n varying from 1-7.
+
+[info] ::Benchmark TSeq Trampoline: raw::
 [info] cores: 2
 [info] hostname: vera.local
 [info] jvm-name: Java HotSpot(TM) 64-Bit Server VM
@@ -67,25 +45,41 @@ object TrampolineBenchmark extends PerformanceTest {
 [info] jvm-version: 24.51-b03
 [info] os-arch: x86_64
 [info] os-name: Mac OS X
-[info] Parameters(n -> 1): 0.016
-[info] Parameters(n -> 2): 0.078
-[info] Parameters(n -> 3): 0.345
-[info] Parameters(n -> 4): 1.693
-[info] Parameters(n -> 5): 8.197
-[info] Parameters(n -> 6): 33.485
-[info] Parameters(n -> 7): 138.178
+[info] Parameters(n -> 1): 0.081
+[info] Parameters(n -> 2): 0.406
+[info] Parameters(n -> 3): 2.018
+[info] Parameters(n -> 4): 9.901
+[info] Parameters(n -> 5): 41.303
+[info] Parameters(n -> 6): 168.816
+[info] Parameters(n -> 7): 705.076
+
+[info] ::Benchmark Scalaz Trampoline: raw::
+[info] cores: 2
+[info] hostname: vera.local
+[info] jvm-name: Java HotSpot(TM) 64-Bit Server VM
+[info] jvm-vendor: Oracle Corporation
+[info] jvm-version: 24.51-b03
+[info] os-arch: x86_64
+[info] os-name: Mac OS X
+[info] Parameters(n -> 1): 0.018
+[info] Parameters(n -> 2): 0.071
+[info] Parameters(n -> 3): 0.305
+[info] Parameters(n -> 4): 1.418
+[info] Parameters(n -> 5): 6.568
+[info] Parameters(n -> 6): 28.485
+[info] Parameters(n -> 7): 116.739
 */
 
 /*
   performance of "TSeq Trampoline: raw" in {
     using(ns) in { n =>
-      ackermannTA(m, n).run
+      ackermann[Free](m, n).run
     }
   }
 
   performance of "Scalaz Trampoline: raw" in {
     using(ns) in { n =>
-      ackermannZ(m, n).run
+      ackermann[FreeZ](m, n).run
     }
   }
 */

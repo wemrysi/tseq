@@ -35,7 +35,7 @@ sealed abstract class Free[S[_], A] { self =>
     }
 
   final def mapSuspension[T[_]](f: S ~> T)(implicit S: Functor[S], T: Functor[T]): Free[T, A] =
-    fold(point(_), s => fromView(Suspend(f(S.map(s)(_ mapSuspension f)))))
+    fold(point(_), s => suspend0(f(S.map(s)(_ mapSuspension f))))
 
   final def go(f: S[Free[S, A]] => Free[S, A])(implicit S: Functor[S]): A = {
     @tailrec def go0(t: Free[S, A]): A =
@@ -85,13 +85,13 @@ object Free extends FreeInstances {
     fromView(Return(a))
 
   def suspend[S[_], A](fa: => Free[S, A])(implicit S: Applicative[S]): Free[S, A] =
-    fromView(Suspend(S.point(fa)))
+    suspend0(S.point(fa))
 
   def return_[S[_], A](a: => A)(implicit S: Applicative[S]): Free[S, A] =
     suspend(point(a))
 
   def liftF[S[_], A](sa: S[A])(implicit S: Functor[S]): Free[S, A] =
-    fromView(Suspend(S.map(sa)(point(_))))
+    suspend0(S.map(sa)(point(_)))
 
   ////
 
@@ -102,6 +102,9 @@ object Free extends FreeInstances {
   private[fixed] sealed abstract class View[S[_], A]
   private final case class Return[S[_], A](a: A) extends View[S, A]
   private final case class Suspend[S[_], A](a: S[Free[S, A]]) extends View[S, A]
+
+  private[fixed] def suspend0[S[_], A](sa: S[Free[S, A]]): Free[S, A] =
+    fromView(Suspend(sa))
 
   private def fromView[S[_], A](v: View[S, A]): Free[S, A] =
     FM(v, emptyExp[S, A])
@@ -130,11 +133,15 @@ object Trampoline extends TrampolineInstances {
 }
 
 sealed abstract class FreeInstances extends TrampolineInstances {
-  implicit def freeMonad[S[_]: Functor]: Monad[({type λ[α] = Free[S, α]})#λ] =
-    new Monad[({type λ[α] = Free[S, α]})#λ] {
+  import Free._
+
+  implicit def freeMonadFree[S[_]]: MonadFree[Free, S] =
+    new MonadFree[Free, S] {
       def point[A](a: => A) = Free.point(a)
       override def map[A, B](fa: Free[S, A])(f: A => B) = fa map f
       def bind[A, B](a: Free[S, A])(f: A => Free[S, B]) = a flatMap f
+      def wrap[A](s: S[Free[S, A]])(implicit S: Functor[S]): Free[S, A] = suspend0(s)
+      def resume[A](fa: Free[S, A])(implicit S: Functor[S]): S[Free[S, A]] \/ A = fa.resume
     }
 }
 
