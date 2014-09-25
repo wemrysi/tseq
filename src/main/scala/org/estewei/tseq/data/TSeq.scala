@@ -1,5 +1,6 @@
 package org.estewei.tseq.data
 
+import scala.inline
 import scalaz.{Category, Forall}
 
 abstract class TSeq[S[_[_, _], _, _]] {
@@ -65,6 +66,8 @@ abstract class TSeq[S[_[_, _], _, _]] {
 }
 
 object TSeq {
+
+  @inline def apply[S[_[_, _], _, _]](implicit S: TSeq[S]): TSeq[S] = S
 
   implicit def tSeqCategory[S[_[_, _], _, _], C[_, _]](implicit S: TSeq[S]): Category[({type l[x, y] = S[C, x, y]})#l] =
     new Category[({type l[x, y] = S[C, x, y]})#l] {

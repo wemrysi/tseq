@@ -1,16 +1,15 @@
 package org.estewei.tseq.fixed
 
-import scala.{AnyVal, Function0, Predef => P}
+import scala.{AnyVal, Function0}
 import scala.annotation.tailrec
 import scalaz.{Free => _, _}
 import scalaz.std.function._
 
 import org.estewei.tseq.data._
 
-sealed abstract class Free[S[_], A] { self =>
+sealed abstract class Free[S[_], A] {
   import Free._
   import Leibniz._
-  import P.=:=
 
   private[fixed] type X
   private[fixed] val h: View[S, X]
@@ -30,7 +29,7 @@ sealed abstract class Free[S[_], A] { self =>
 
   final def resume(implicit S: Functor[S]): S[Free[S, A]] \/ A =
     toView match {
-      case Return(a) => \/.right(a)
+      case Return(a)  => \/.right(a)
       case Suspend(s) => \/.left(s)
     }
 
@@ -46,7 +45,7 @@ sealed abstract class Free[S[_], A] { self =>
     go0(this)
   }
 
-  final def run(implicit e: Free[S, A] =:= Trampoline[A]): A =
+  final def run(implicit e: Free[S, A] === Trampoline[A]): A =
     e(this).go(_())
 
   final def runM[M[_]](f: S[Free[S, A]] => M[Free[S, A]])(implicit S: Functor[S], M: Monad[M]): M[A] =
@@ -57,22 +56,30 @@ sealed abstract class Free[S[_], A] { self =>
 
   ////
 
+  @tailrec
   private final def toView(implicit S: Functor[S]): View[S, A] =
     h match {
       case Return(x) =>
-        val vl = qs.tviewl[FCAB[S]#c, X, A](t)
-        vl.fold[View[S, A]](
-          e => Return(symm[⊥, ⊤, A, X](e)(x)),
-          new Forall[vl.UC[View[S, A]]#λ] {
-            def apply[B] = (hc, tc) =>
-              hc.run(x).bindFree(tc).toView
-          })
+        free(x) match {
+          case \/-(a) => Return(a)
+          case -\/(f) => f.toView
+        }
       case Suspend(f) =>
         Suspend(S.map(f)(_ bindFree t))
     }
 
+  private final def free(x: X): Free[S, A] \/ A = {
+    val vl = qs.tviewl[FCAB[S]#c, X, A](t)
+
+    vl.fold[Free[S, A] \/ A](
+      e => \/.right(symm[⊥, ⊤, A, X](e)(x)),
+      new Forall[vl.UC[Free[S, A] \/ A]#λ] {
+        def apply[B] = (hc, tc) => \/.left(hc.run(x).bindFree(tc))
+      })
+  }
+
   private final def bindFree[B](e: FMExp[S, A, B]): Free[S, B] =
-    FM(self.h, qs.tconcat[FCAB[S]#c, self.X, A, B](self.t, e))
+    FM(h, qs.tconcat[FCAB[S]#c, X, A, B](t, e))
 
 }
 
@@ -107,16 +114,12 @@ object Free extends FreeInstances {
     fromView(Suspend(sa))
 
   private def fromView[S[_], A](v: View[S, A]): Free[S, A] =
-    FM(v, emptyExp[S, A])
+    FM(v, qs.tempty[FCAB[S]#c, A])
 
   private def FM[S[_], A, B](x: View[S, A], y: FMExp[S, A, B]): Free[S, B] =
     new Free[S, B] { type X = A; val h = x; val t = y }
 
-  private val qs = P.implicitly[TSeq[FastTCQueue]]
-
-  private def emptyExp[S[_], A]: FMExp[S, A, A] =
-    CTQueue.empty[RTQueue, FCAB[S]#c, A]
-
+  private val qs = TSeq[FastTCQueue]
 }
 
 object Trampoline extends TrampolineInstances {
