@@ -4,7 +4,9 @@ organization := "org.estewei"
 
 version := "0.0.1"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.2"
+
+crossScalaVersions := Seq("2.10.4", "2.11.2")
 
 // Resolvers
 resolvers ++= Seq(
@@ -36,8 +38,11 @@ scalacOptions ++= Seq(
 libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "7.1.0",
   "org.scalaz" %% "scalaz-iteratee" % "7.1.0",
-  "com.storm-enroute" %% "scalameter" % "0.6"
+  "com.storm-enroute" %% "scalameter" % "0.6" % Test
 )
+
+// Wartremover
+wartremoverErrors ++= Warts.allBut(Wart.Any, Wart.Nothing, Wart.NoNeedForMonad)
 
 testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
 
