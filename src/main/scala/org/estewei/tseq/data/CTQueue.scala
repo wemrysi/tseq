@@ -54,8 +54,7 @@ object CTQueue {
               bb fold (
                 e => symm[⊥, ⊤, Z, Y](e).subst[({type λ[α] = CTQueue[Q, C, X, α]})#λ](a),
                 new Forall[bb.UQ[CTQueue[Q, C, X, Z]]#λ] {
-                  def apply[B] = (_, _) =>
-                    CN(x, Q.tsnoc[CT[Q, C]#c, A, Y, Z](q, bb))
+                  def apply[B] = (_, _) => CN(x, Q.tsnoc[CT[Q, C]#c, A, Y, Z](q, bb))
                 })
             }
           })
@@ -64,8 +63,7 @@ object CTQueue {
         s fold (
           e => e.subst[({type λ[α] = TViewL[CTQ[Q]#q, C, α, Y]})#λ](tEmptyL[CTQ[Q]#q, C, Y]),
           new Forall[s.UQ[TViewL[CTQ[Q]#q, C, X, Y]]#λ] {
-            def apply[A] = (x, q) =>
-              tUncons[CTQ[Q]#q, C, X, A, Y](x, linkAll(q))
+            def apply[A] = (x, q) => tUncons[CTQ[Q]#q, C, X, A, Y](x, linkAll(q))
           })
 
     }
@@ -81,8 +79,7 @@ object CTQueue {
           h fold (
             _ => sys.error("unpossible!"),
             new Forall[h.UQ[CTQueue[Q, C, A, B]]#λ] {
-              def apply[Y] = (x, q) =>
-                CN(x, qsnoc(q, linkAll(t)))
+              def apply[Y] = (x, q) => CN(x, qsnoc(q, linkAll(t)))
             })
       })
   }
@@ -91,8 +88,7 @@ object CTQueue {
     r fold (
       e => symm[⊥, ⊤, Z, Y](e).subst[({type λ[α] = Q[CT[Q, C]#c, X, α]})#λ](q),
       new Forall[r.UQ[Q[CT[Q, C]#c, X, Z]]#λ] {
-        def apply[A] = (_, _) =>
-          Q.tsnoc[CT[Q, C]#c, X, Y, Z](q, r)
+        def apply[A] = (_, _) => Q.tsnoc[CT[Q, C]#c, X, Y, Z](q, r)
       })
 
 }

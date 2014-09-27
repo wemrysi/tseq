@@ -1,8 +1,7 @@
 package org.estewei.tseq.fixed
 
 import scala.inline
-import scala.annotation.tailrec
-import scalaz.{Free => FreeZ, _}
+import scalaz._
 
 trait MonadFree[M[_[_], _], S[_]] extends Monad[({type λ[α] = M[S, α]})#λ] {
 
@@ -12,6 +11,12 @@ trait MonadFree[M[_[_], _], S[_]] extends Monad[({type λ[α] = M[S, α]})#λ] {
 
   final def suspend[A](m: => M[S, A])(implicit S: Applicative[S]): M[S, A] =
     wrap(S.point(m))
+
+  final def return_[A](a: => A)(implicit S: Applicative[S]): M[S, A] =
+    suspend(point(a))
+
+  final def liftF[A](sa: S[A])(implicit S: Functor[S]): M[S, A] =
+    wrap(S.map(sa)(point(_)))
 
 }
 

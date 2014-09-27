@@ -1,6 +1,10 @@
 package org.estewei.tseq.fixed
 
-import scala.{Int, Stream, Function0}
+import scala.{Int, Function0, AnyVal}
+import scala.{Stream, Nil, ::, List}
+import scala.Predef.intWrapper
+import scala.annotation.tailrec
+
 import org.scalameter.api._
 import scalaz.{Free => ZFree, Trampoline => _, _}
 import scalaz.iteratee._
@@ -66,17 +70,59 @@ object TrampolineBenchmark extends PerformanceTest {
 
   // Improvements over free for left-associated binds
 
-  final case class Get[I, O](f: I => O)
+  final case class Get[I, O](f: I => O) extends AnyVal
+
   type G[I] = { type O[o] = Get[I, o] }
+
   implicit def getFunctor[I]: Functor[G[I]#O] =
     new Functor[G[I]#O] {
       def map[A, B](g: Get[I, A])(f: A => B): Get[I, B] =
         Get(f compose g.f)
     }
 
-  type ItT[I, O] = Free[G[I]#O, O]
-  type ItZ[I, O] = ZFree[G[I]#O, O]
+  type It[M[_[_], _]] = { type f[i, o] = M[G[i]#O, o] }
 
-  def getT[I]: ItT[I, I] = Free.liftF[G[I]#O, I](Get(i => i))
-  def getZ[I]: ItZ[I, I] = ZFree.liftF[G[I]#O, I](Get(i => i))
+  def get[M[_[_], _], I](implicit M: MonadFree[M, G[I]#O]): It[M]#f[I, I] =
+    M.liftF(Get(i => i))
+
+  def addGet[M[_[_], _]](x: Int)(implicit M: MonadFree[M, G[Int]#O]): It[M]#f[Int, Int] =
+    M.lift(x + (_: Int))(get)
+
+  def kcomp[F[_], A, B, C](f: A => F[B], g: B => F[C])(implicit F: Bind[F]): A => F[C] =
+    (F.bind(_: F[B])(g)) compose f
+
+  def addNBad[M[_[_], _]](n: Int)(implicit M: MonadFree[M, G[Int]#O]): It[M]#f[Int, Int] =
+    Stream.fill(n)(addGet[M]_)
+      .foldLeft(M.point(_: Int))(kcomp[({type λ[α] = It[M]#f[Int, α]})#λ, Int, Int, Int](_, _))
+      .apply(0)
+
+  @tailrec
+  def feedAll[M[_[_], _], A, B](fa: M[G[A]#O, B], as: List[A])(implicit M: MonadFree[M, G[A]#O]): Maybe[B] =
+    M.resume(fa) match {
+      case \/-(b) => Maybe.just(b)
+      case -\/(g) => as match {
+        case Nil    => Maybe.empty
+        case h :: t => feedAll(g.f(h), t)
+      }
+    }
+
+  type GInt[A] = Get[Int, A]
+
+  def testQuadratic[M[_[_], _]](n: Int)(implicit M: MonadFree[M, GInt]) =
+    feedAll(addNBad[M](n), (1 to n).toList)
+
+  val count = Gen.range("count")(1000, 6000, 1000)
+
+  performance of "TSeq Quadratic" in {
+    using(count) in { s =>
+      testQuadratic[Free](s)
+    }
+  }
+
+  performance of "Scalaz Quadratic" in {
+    using(count) in { s =>
+      testQuadratic[ZFree](s)
+    }
+  }
+
 }
